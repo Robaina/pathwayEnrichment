@@ -1,0 +1,2 @@
+prune examples
+exclude example.ipynb gitignore

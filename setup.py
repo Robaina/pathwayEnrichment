@@ -1,17 +1,37 @@
 from setuptools import setup
+from pip.req import parse_requirements
+from os import path
 
-setup(
-    name='brendapyrser',
-    version='0.1.0',
-    description='Tools to parse de BRENDA database',
-    # long_description=open('DESCRIPTION.rst').read(),
-    url='https://github.com/Robaina/BRENDA_database',
-    author='Semidan Robaina Estevez',
-    author_email='semidan.robaina@gmail.com',
-    license='Creative Commons Attribution 4.0 International',
-    # packages=find_packages(),
-    zip_safe=False,
-    install_requires=['numpy', 'pandas'],
-    # include_package_data=False,  # to include data files in installation
-    # package_data={'': ['data/*.csv']},
-)
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
+install_reqs = parse_requirements('requirements.txt')
+reqs = [str(ir.req) for ir in install_reqs]
+
+DESCRIPTION = "Jupyter static interactive figures"
+LONG_DESCRIPTION = long_description,
+LONG_DESCRIPTION_CONTENT_TYPE = 'text/markdown'
+NAME = "pathwayenrichment"
+AUTHOR = "Semidán Robaina Estévez"
+AUTHOR_EMAIL = "srobaina@ull.edu.es"
+MAINTAINER = "Semidán Robaina Estévez"
+MAINTAINER_EMAIL = "srobaina@gmail.com"
+DOWNLOAD_URL = 'http://github.com/robaina/pathwayEnrichment'
+LICENSE = 'Creative Commons Attribution 4.0 International'
+VERSION = '0.0.1'
+
+setup(name=NAME,
+      version=VERSION,
+      description=DESCRIPTION,
+      long_description=LONG_DESCRIPTION,
+      author=AUTHOR,
+      author_email=AUTHOR_EMAIL,
+      maintainer=MAINTAINER,
+      maintainer_email=MAINTAINER_EMAIL,
+      url=DOWNLOAD_URL,
+      download_url=DOWNLOAD_URL,
+      license=LICENSE,
+      packages=['pathwayenrichment'],
+      install_requires=reqs
+      )

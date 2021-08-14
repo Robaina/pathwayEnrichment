@@ -2,14 +2,8 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 import re
-
-<<<<<<< HEAD
 from staticinteract import StaticInteract, DropDownWidget, RangeWidget
-=======
-from staticinteract import StaticInteract
-from stacticinteract import DropDownWidget, RangeWidget
 
->>>>>>> d7d6d2fc67508c3f91490fafcd2d5f03681bf40d
 
 class PathwayPlotter:
     """
