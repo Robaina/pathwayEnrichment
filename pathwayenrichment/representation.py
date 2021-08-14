@@ -1,8 +1,8 @@
-
 import numpy as np
-import random
 import multiprocessing as mp
 import warnings
+from .utils import (getCounts, randomPartition,
+                    copyProxyDictionary, computeSamplePvalue)
 
 
 class PathwayRepresentation:
@@ -13,7 +13,7 @@ class PathwayRepresentation:
     def __init__(self, clusters: dict, gene_pathways: dict,
                  system_pathways: dict = None) -> None:
         self._gene_pathways = gene_pathways
-        self._pathway_sizes = self.getCounts(
+        self._pathway_sizes = getCounts(
             [p for pathways in self._gene_pathways.values() for p in pathways]
         )
         self._pathway_ids = list(self._pathway_sizes.keys())
@@ -22,20 +22,6 @@ class PathwayRepresentation:
             self.checkSystemPathways()
         self._clusters = clusters
         self._cluster_ids = list(self._clusters.keys())
-
-    @staticmethod
-    def getCounts(array_like: list, sort_by_value=True) -> list:
-        """
-        Get dict of array item counts. Dict sorted
-        by keys unless sort_by_value set to True.
-        """
-        unique_cond, counts_cond = np.unique(array_like, return_counts=True)
-        counts = dict(zip(unique_cond, counts_cond))
-        if sort_by_value:
-            return dict(sorted(
-                counts.items(), key=lambda item: item[1], reverse=True))
-        else:
-            return counts
 
     def getPathwaysFromGeneList(self, gene_list: list) -> list:
         """
@@ -76,7 +62,7 @@ class PathwayRepresentation:
         """
         clusters_pathway_representation = {}
         for cluster_id, cluster in clusters.items():
-            cluster_pathway_sizes = self.getCounts(
+            cluster_pathway_sizes = getCounts(
                 self.getPathwaysFromGeneList(cluster)
             )
             clusters_pathway_representation[cluster_id] = self.computeClusterPathwayRepresentation(
@@ -148,39 +134,13 @@ class ClusterPermutator(PathwayRepresentation):
         self._cluster_representation_p_values = self.initializeClustersRepresentationDict()
         self._sample_size = None
 
-    @staticmethod
-    def randomPartition(elems: list, bin_sizes: list) -> list:
-        """
-        Randomly partition list elements into
-        bins of given sizes
-        """
-        def shuffleList(elems):
-            random.shuffle(elems)
-            return elems
-
-        elems = shuffleList(elems)
-        partition = []
-        start, end = 0, 0
-        for bin_size in bin_sizes:
-            end += bin_size
-            partition.append(elems[start:end])
-            start += bin_size
-        return partition
-
-    @staticmethod
-    def copyProxyDictionary(proxydict) -> dict:
-        """
-        Convert ProxyDict, as returned by multiprocessing.Manager to regular dict.
-        """
-        return {k: v.copy() for k, v in proxydict.items()}
-
     def getPermutedClusterPathwayRepresentation(self, i=None):
         """
         Compute pathway representation in permuted clusters
         (Ignore 'i' argument, required by Multiprocessing.map)
         """
         permuted_clusters = dict(
-            zip(self._cluster_ids, self.randomPartition(self._gene_list, self._cluster_sizes))
+            zip(self._cluster_ids, randomPartition(self._gene_list, self._cluster_sizes))
         )
         return self.getClustersPathwayRepresentation(permuted_clusters)
 
@@ -230,17 +190,6 @@ class ClusterPermutator(PathwayRepresentation):
         )[np.argsort([pvalue for rep, pvalue in pathways.values()])]
         return {k: pathways[k] for k in sorted_keys}
 
-    @staticmethod
-    def _computeSamplePvalue(distribution: list, statistic_value: float) -> float:
-        """
-        Compute sample p-value given null distribution and statistic value
-        """
-        N_equal_more_extreme = len(
-            np.where(np.array(distribution) >= statistic_value)[0]
-            )
-        N_total = len(distribution)
-        return N_equal_more_extreme / N_total
-
     def computePermutationSamplePvalue(self, aggregated_samples: dict,
                                        pathway_representation: dict) -> dict:
         """
@@ -251,7 +200,7 @@ class ClusterPermutator(PathwayRepresentation):
             pathways_rep = {}
             for pathway_id, rep_value in rep_values.items():
                 rep_distribution = aggregated_samples[cluster_id][pathway_id]
-                p_value = self._computeSamplePvalue(rep_distribution, rep_value)
+                p_value = computeSamplePvalue(rep_distribution, rep_value)
                 pathways_rep[pathway_id] = (rep_value, p_value)
             rep_pvalues[cluster_id] = self._sortPathwaysByPvalue(pathways_rep)
         return rep_pvalues
@@ -274,7 +223,7 @@ class ClusterPermutator(PathwayRepresentation):
         )
         pool.close()
         print('Finished permutation sampling')
-        pathway_rep_result = self.copyProxyDictionary(
+        pathway_rep_result = copyProxyDictionary(
             self.computePermutationSamplePvalue(self.aggregatePermutationSampleResults(
                 samples, system_type='pathway'), self._cluster_pathway_representation)
             )
@@ -285,7 +234,7 @@ class ClusterPermutator(PathwayRepresentation):
             system_samples = [
                 self.getClustersSystemRepresentation(sample) for sample in samples
                 ]
-            system_rep_result = self.copyProxyDictionary(self.computePermutationSamplePvalue(
+            system_rep_result = copyProxyDictionary(self.computePermutationSamplePvalue(
                 self.aggregatePermutationSampleResults(system_samples, system_type='system'),
                 self._cluster_system_representation)
                 )
