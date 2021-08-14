@@ -1,15 +1,11 @@
 from setuptools import setup
-from pip.req import parse_requirements
 from os import path
 
 this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+with open(path.join(this_directory, 'README.md'), 'r', encoding='utf-8') as f:
     long_description = f.read()
 
-install_reqs = parse_requirements('requirements.txt')
-reqs = [str(ir.req) for ir in install_reqs]
-
-DESCRIPTION = "Jupyter static interactive figures"
+DESCRIPTION = "Perform permutation-based pathway enrichment analysis"
 LONG_DESCRIPTION = long_description,
 LONG_DESCRIPTION_CONTENT_TYPE = 'text/markdown'
 NAME = "pathwayenrichment"
@@ -33,5 +29,6 @@ setup(name=NAME,
       download_url=DOWNLOAD_URL,
       license=LICENSE,
       packages=['pathwayenrichment'],
-      install_requires=reqs
+      install_requires=['numpy', 'staticinteract',
+                        'pandas', 'matplotlib', 'requests', 'scikit_learn']
       )
