@@ -5,27 +5,29 @@ import re
 from staticinteract import StaticInteract, DropDownWidget, RangeWidget
 
 
-class PathwayPlotter:
-    """
-    Methods  to plot pathway representation results
-    """
-    def __init(self):
-        pass
-
-
+# class PathwayPlotter:
+#     """
+#     Methods  to plot pathway representation results
+#     """
+#     def __init(self):
+#         pass
+#
+#
 def extractKoPathwayName(Ko_str):
     return re.sub('\[.*?\]', '', Ko_str).strip()
+#
+#
+# # Plotting functions
+# def plotClusterData(pdata, cluster, ax=None, cluster_id=None):
+#     pdata[pdata.index.isin(cluster)].transpose().plot(
+#         legend=False, title=f'{cluster_id}, size={len(cluster)}',
+#         ax=ax, color='#9a9a9a', linewidth=0.8,
+#         marker='.', markerfacecolor='#ee9929', markersize=12)
 
 
-# Plotting functions
-def plotClusterData(pdata, cluster, ax=None, cluster_id=None):
-    pdata[pdata.index.isin(cluster)].transpose().plot(
-        legend=False, title=f'{cluster_id}, size={len(cluster)}',
-        ax=ax, color='#9a9a9a', linewidth=0.8,
-        marker='.', markerfacecolor='#ee9929', markersize=12)
-
-
-def plotKEGGFrequencies(data: dict, color=None, axis=None):
+def plotKEGGFrequencies(data: dict, color: str = None,
+                        plot_first_N: int = 10, axis=None,
+                        title: str = 'System (sample p-value)') -> None:
     """
     Bar plot of sorted KEGG systems or subsystems
     data: dictionary wth keys being system or subsystem names and
@@ -38,60 +40,62 @@ def plotKEGGFrequencies(data: dict, color=None, axis=None):
         {extractKoPathwayName(k): data[k][0] for k in data.keys()}
     )
     ax = clean_name_data.plot.bar(figsize=(12, 8), color=color, ax=axis)
+    ax.set_ylabel('Pathway representation (%)')
+    ax.set_title(title)
     for i, p in enumerate(ax.patches):
         ax.annotate(f'({pvalues[i]:.4f})', (p.get_x() * 1.005, p.get_height() * 1.006))
 
 
-def plotSystemsAndSubsystemsWebPage(clusters, cluster_data, permutation_results,
-                                    plot_first_N=10, color=None,
-                                    img_folder_name=None):
-    """
-    NOTE: Increase tick labels font size!
-    """
-
-    plt.rcParams.update({'figure.max_open_warning': 0})
-    if color is None:
-        color = 'C0'
-    if img_folder_name is None:
-        img_folder_name = 'iplot'
-
-    system_types = ['system', 'pathway']
-    cluster_ids = list(clusters.keys())
-
-    def plot_fun(system_type, cluster_id):
-
-        fig, ax = plt.subplot_mosaic(
-            """
-            A
-            B
-            """,
-            gridspec_kw = {"height_ratios": [0.7, 1]}
-        )
-
-        ax['B'].set_ylabel('Pathway representation (%)')
-        ax['B'].set_title(f'{system_type}s (sample p-value)')
-
-        if cluster_id in clusters.keys():
-            p_Data = permutation_results
-            kdata = {k: v
-                     for k,v in p_Data[system_type][cluster_id].items()}
-            if len(kdata) > plot_first_N:
-                kdata = {k: kdata[k] for k in list(kdata.keys())[:10]}
-            plotClusterData(cluster_data, clusters[cluster_id],
-                            ax['A'], cluster_id)
-            plotKEGGFrequencies(kdata,
-                                color=color, axis=ax['B'])
-        fig.set_figwidth(20)
-        fig.set_figheight(20)
-        return fig
-
-    i_fig = StaticInteract(plot_fun,
-                           system_type=DropDownWidget(system_types,
-                                        description='Level'),
-                           cluster_id=DropDownWidget(cluster_ids,
-                                        description='Cluster ID'),
-                           interact_name=img_folder_name)
-    return i_fig
+# def plotSystemsAndSubsystemsWebPage(clusters, cluster_data, permutation_results,
+#                                     plot_first_N=10, color=None,
+#                                     img_folder_name=None):
+#     """
+#     NOTE: Increase tick labels font size!
+#     """
+#
+#     plt.rcParams.update({'figure.max_open_warning': 0})
+#     if color is None:
+#         color = 'C0'
+#     if img_folder_name is None:
+#         img_folder_name = 'iplot'
+#
+#     system_types = ['system', 'pathway']
+#     cluster_ids = list(clusters.keys())
+#
+#     def plot_fun(system_type, cluster_id):
+#
+#         fig, ax = plt.subplot_mosaic(
+#             """
+#             A
+#             B
+#             """,
+#             gridspec_kw = {"height_ratios": [0.7, 1]}
+#         )
+#
+#         ax['B'].set_ylabel('Pathway representation (%)')
+#         ax['B'].set_title(f'{system_type}s (sample p-value)')
+#
+#         if cluster_id in clusters.keys():
+#             p_Data = permutation_results
+#             kdata = {k: v
+#                      for k,v in p_Data[system_type][cluster_id].items()}
+#             if len(kdata) > plot_first_N:
+#                 kdata = {k: kdata[k] for k in list(kdata.keys())[:plot_first_N]}
+#             plotClusterData(cluster_data, clusters[cluster_id],
+#                             ax['A'], cluster_id)
+#             plotKEGGFrequencies(kdata,
+#                                 color=color, axis=ax['B'])
+#         fig.set_figwidth(20)
+#         fig.set_figheight(20)
+#         return fig
+#
+#     i_fig = StaticInteract(plot_fun,
+#                            system_type=DropDownWidget(system_types,
+#                                         description='Level'),
+#                            cluster_id=DropDownWidget(cluster_ids,
+#                                         description='Cluster ID'),
+#                            interact_name=img_folder_name)
+#     return i_fig
 
 
 def getRepresentationStackedPlotData(p_paths, pvalue_cutoff=1):

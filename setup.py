@@ -30,6 +30,5 @@ setup(name=NAME,
       download_url=DOWNLOAD_URL,
       license=LICENSE,
       packages=['pathwayenrichment'],
-      install_requires=['numpy', 'staticinteract',
-                        'pandas', 'matplotlib', 'requests', 'scikit_learn']
+      install_requires=['numpy', 'pandas', 'matplotlib', 'requests', 'scikit_learn']
       )
