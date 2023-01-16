@@ -4,6 +4,8 @@ import warnings
 from .utils import (getCounts, randomPartition,
                     copyProxyDictionary, computeSamplePvalue)
 
+from .utils import saveToPickleFile
+
 
 class PathwayRepresentation:
     """
@@ -144,6 +146,23 @@ class ClusterPermutator(PathwayRepresentation):
         )
         return self.getClustersPathwayRepresentation(permuted_clusters)
 
+    def _getMaxRepresentationValueWithinEachSample(self, samples: list) -> list:
+        """Get the maximum pathway representation value across clusters and
+           pathways/systems for each permutation sample. Generates a distribution
+           of maximum values to be used by the maxT method to correct
+           permutation p-values for multiple comparisons.
+
+        Args:
+            samples (list): list of permutation samples
+
+        Returns:
+            list: distribution of maximum representation values across samples
+        """
+        return [
+            max([max(pathways.values()) for cluster, pathways in sample.items()]) 
+            for sample in samples
+        ]
+
     def _aggregatePermutationPathwayResults(self, samples: list) -> dict:
         aggregated_samples = {
             cluster_id: {pathway: []
@@ -185,23 +204,32 @@ class ClusterPermutator(PathwayRepresentation):
         and values are tuples: (representation, p-value)
         """
         pathways = cluster_pathway_pvalue
-        sorted_keys = np.array(
-                               list(pathways.keys())
-        )[np.argsort([pvalue for rep, pvalue in pathways.values()])]
+        pathway_names = np.array(list(pathways.keys()))
+        sorted_keys = pathway_names[
+            np.argsort([pvalue for rep, pvalue, pvalue_adjust in pathways.values()])
+            ]
         return {k: pathways[k] for k in sorted_keys}
 
-    def computePermutationSamplePvalue(self, aggregated_samples: dict,
-                                       pathway_representation: dict) -> dict:
+    def computePermutationSamplePvalue(self, 
+        samples: list, pathway_representation: dict,
+        system_type='pathway') -> dict:
         """
-        Compute sample p-value for each pathway and cluster
+        Compute sample p-value for each pathway and cluster,
+        also computes adjusted p-value followin the maxT method.
         """
+        aggregated_samples = self.aggregatePermutationSampleResults(
+            samples, system_type=system_type
+            )
         rep_pvalues = {cluster_id: {} for cluster_id in pathway_representation.keys()}
+        max_samples_representation = self._getMaxRepresentationValueWithinEachSample(samples)
+        saveToPickleFile(max_samples_representation, "max.pkl")
         for cluster_id, rep_values in pathway_representation.items():
             pathways_rep = {}
             for pathway_id, rep_value in rep_values.items():
                 rep_distribution = aggregated_samples[cluster_id][pathway_id]
                 p_value = computeSamplePvalue(rep_distribution, rep_value)
-                pathways_rep[pathway_id] = (rep_value, p_value)
+                p_value_adjust = computeSamplePvalue(max_samples_representation, rep_value)
+                pathways_rep[pathway_id] = (rep_value, p_value, p_value_adjust)
             rep_pvalues[cluster_id] = self._sortPathwaysByPvalue(pathways_rep)
         return rep_pvalues
 
@@ -224,8 +252,9 @@ class ClusterPermutator(PathwayRepresentation):
         pool.close()
         print('Finished permutation sampling')
         pathway_rep_result = copyProxyDictionary(
-            self.computePermutationSamplePvalue(self.aggregatePermutationSampleResults(
-                samples, system_type='pathway'), self._cluster_pathway_representation)
+            self.computePermutationSamplePvalue(
+                samples, self._cluster_pathway_representation, system_type='pathway'
+                )
             )
 
         if self._system_pathways is None:
@@ -234,9 +263,10 @@ class ClusterPermutator(PathwayRepresentation):
             system_samples = [
                 self.getClustersSystemRepresentation(sample) for sample in samples
                 ]
-            system_rep_result = copyProxyDictionary(self.computePermutationSamplePvalue(
-                self.aggregatePermutationSampleResults(system_samples, system_type='system'),
-                self._cluster_system_representation)
+            system_rep_result = copyProxyDictionary(
+                self.computePermutationSamplePvalue(
+                    system_samples, self._cluster_system_representation, system_type='system'
+                    )
                 )
             return {'pathway': pathway_rep_result, 'system': system_rep_result}
 

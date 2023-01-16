@@ -6,7 +6,7 @@ with open(path.join(this_directory, 'README.md'), 'r', encoding='utf-8') as f:
     long_description = f.read()
 
 DESCRIPTION = "Perform permutation-based pathway enrichment analysis"
-LONG_DESCRIPTION = long_description,
+LONG_DESCRIPTION = long_description
 LONG_DESCRIPTION_CONTENT_TYPE = 'text/markdown'
 NAME = "pathwayenrichment"
 AUTHOR = "Semidán Robaina Estévez"
@@ -15,7 +15,7 @@ MAINTAINER = "Semidán Robaina Estévez"
 MAINTAINER_EMAIL = "srobaina@gmail.com"
 DOWNLOAD_URL = 'http://github.com/robaina/pathwayEnrichment'
 LICENSE = 'Creative Commons Attribution 4.0 International'
-VERSION = '0.0.3'
+VERSION = '0.0.4'
 
 setup(name=NAME,
       version=VERSION,
@@ -29,6 +29,6 @@ setup(name=NAME,
       url=DOWNLOAD_URL,
       download_url=DOWNLOAD_URL,
       license=LICENSE,
-      packages=['pathwayenrichment'],
+      packages=['src'],
       install_requires=['numpy', 'pandas', 'matplotlib', 'requests', 'scikit_learn']
       )
